@@ -38,9 +38,8 @@ a{color:inherit;text-decoration:none}
 
 /* ---------- intro ---------- */
 #intro{position:fixed;inset:0;z-index:100;background:radial-gradient(120% 120% at 50% 110%,#358752 0%,#1F5E3A 45%,#0F2E1D 100%);
-display:flex;align-items:center;justify-content:center;flex-direction:column;gap:26px;
-transition:clip-path 1.4s cubic-bezier(.65,0,.35,1),opacity .6s ease 1s;clip-path:circle(150% at 50% 60%)}
-#intro.done{clip-path:circle(0% at 50% 42%);opacity:0;pointer-events:none}
+display:flex;align-items:center;justify-content:center;flex-direction:column;gap:26px}
+#intro.done{opacity:0;pointer-events:none;transition:opacity 1s ease}
 #intro .logo{font-family:var(--serif);font-weight:700;font-size:clamp(38px,6vw,72px);letter-spacing:.01em;
 opacity:0;transform:translateY(30px) scale(.96)}
 #intro .tag{font-size:12px;letter-spacing:.42em;text-transform:uppercase;color:var(--salvia);
@@ -264,6 +263,39 @@ animation:grainMove 7s steps(10) infinite}
 /* ---------- pasto del CTA ---------- */
 #ctaGrass{position:absolute;left:0;right:0;bottom:0;width:100%;height:110px;z-index:1;pointer-events:none}
 
+/* ---------- snap entre secciones ---------- */
+html{scroll-snap-type:y proximity}
+#hero,#morph,#quees,#historias,#herramientas,#impacto,#comunidad,#cta{scroll-snap-align:start}
+
+/* ---------- elegir punto en el mapa ---------- */
+#leafmap.picking{cursor:crosshair;outline:3px dashed var(--ambar);outline-offset:4px}
+.repHint{color:var(--ambar);font-size:13.5px;line-height:1.5;font-weight:600;animation:fadeUp .5s ease}
+
+/* ---------- responsive fino ---------- */
+@media(max-width:720px){
+  .wrap{padding:0 22px}
+  nav{padding:14px 22px}
+  nav.solid{padding:10px 22px}
+  #hero h1{font-size:clamp(40px,11vw,60px)}
+  #morph{height:260vh}
+  #morph .msg h2{font-size:clamp(28px,7.5vw,40px)}
+  #quees{padding:90px 0 80px}
+  #historias{padding:80px 0 90px}
+  #herramientas{padding:90px 0 80px}
+  #impacto{padding:90px 0 80px}
+  #comunidad{padding:90px 0}
+  #cta{padding:90px 0 0}
+  .toolPanel{padding:26px 20px;border-radius:18px}
+  .toolHead{flex-direction:column}
+  .toolNum{display:none}
+  #leafmap{height:300px}
+  .stats{grid-template-columns:1fr 1fr;gap:30px}
+  .marquee .track{font-size:19px}
+  .frow{flex-direction:column;text-align:center}
+  #cityScape{height:30vh}
+  footer{margin-top:70px}
+}
+
 /* ---------- cursor glow ---------- */
 #glow{position:fixed;width:340px;height:340px;border-radius:50%;pointer-events:none;z-index:5;
 background:radial-gradient(circle,rgba(242,169,59,.13),transparent 65%);transform:translate(-50%,-50%);
@@ -291,6 +323,7 @@ transition:opacity .4s;mix-blend-mode:screen}
     <path class="sleaf" style="transform-box:fill-box;transform-origin:0% 100%" d="M61 82 C82 78 94 56 90 38 C70 44 58 64 61 82" fill="#A9D99F"/>
     <path class="sleaf" style="transform-box:fill-box;transform-origin:50% 100%" d="M60 52 C48 38 50 20 60 8 C70 20 72 38 60 52" fill="#F2A93B"/>
     <circle id="seed" cx="60" cy="158" r="5.5" fill="#F2A93B"/>
+    <path id="rootDown" d="M60 158 C56 260 64 430 59 700 C58 800 61 900 60 1100" stroke="#7CC64B" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".95"/>
   </svg>
   <div class="logo">Sustentar<span class="am">Tv</span></div>
   <div class="tag">Historias que cuidan el planeta</div>
@@ -629,13 +662,26 @@ for (let i = 0; i < 14; i++) {
 let introClosed = false;
 function closeIntro(){
   if (introClosed) return; introClosed = true;
-  intro.classList.add('done'); document.body.style.overflow=''; revealHero();
+  document.body.style.overflow = '';
+  if (window.gsap){
+    const tl = gsap.timeline({onComplete: () => { intro.style.display = 'none'; }});
+    const rd = document.getElementById('rootDown');
+    const L2 = rd.getTotalLength();
+    gsap.set(rd, {strokeDasharray: L2, strokeDashoffset: L2});
+    tl.to(rd, {strokeDashoffset: 0, duration: .9, ease: 'power2.in'})
+      .to('#intro .logo, #intro .tag, #intro .skip', {autoAlpha: 0, y: -26, duration: .6, ease: 'power2.inOut'}, '-=.55')
+      .to('#sprout', {y: -40, autoAlpha: 0, duration: .7, ease: 'power2.inOut'}, '-=.5')
+      .to(intro, {autoAlpha: 0, duration: 1.05, ease: 'power2.inOut'}, '-=.35')
+      .add(revealHero, '-=.9');
+  } else {
+    intro.classList.add('done'); revealHero();
+  }
 }
 document.body.style.overflow = 'hidden';
 intro.addEventListener('click', e => { if (e.target.classList.contains('skip')) return; closeIntro(); });
 
 if (window.gsap){
-  const ti = gsap.timeline({onComplete: () => gsap.delayedCall(.45, closeIntro)});
+  const ti = gsap.timeline({onComplete: () => gsap.delayedCall(.3, closeIntro)});
   const stem = document.getElementById('stem');
   const len = stem.getTotalLength();
   gsap.set(stem, {strokeDasharray: len, strokeDashoffset: len});
@@ -802,18 +848,41 @@ function initMap(){
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(MAP);
   placeExamples();
+  function centerOn(lat, lng, label){
+    CENTER = [lat, lng];
+    MAP.setView(CENTER, 14); placeExamples();
+    status.textContent = label;
+  }
+  async function ipFallback(){
+    try {
+      const r = await fetch('https://ipapi.co/json/'); const d = await r.json();
+      if (d && d.latitude) centerOn(d.latitude, d.longitude, '📍 Mostrando ' + (d.city || 'tu zona') + ' (ubicación aproximada) · pins de ejemplo');
+      else status.textContent = 'Mostrando Buenos Aires · pins de ejemplo';
+    } catch(e){ status.textContent = 'Mostrando Buenos Aires · pins de ejemplo'; }
+  }
   if (navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(p => {
-      CENTER = [p.coords.latitude, p.coords.longitude];
-      MAP.setView(CENTER, 14); placeExamples();
-      status.textContent = '📍 Mostrando tu zona · los pins son inquietudes de ejemplo';
-    }, () => { status.textContent = 'Sin acceso a tu ubicación — mostrando Buenos Aires · pins de ejemplo'; },
-    {timeout:6000});
-  } else { status.textContent = 'Mostrando Buenos Aires · pins de ejemplo'; }
+    navigator.geolocation.getCurrentPosition(
+      p => centerOn(p.coords.latitude, p.coords.longitude, '📍 Mostrando tu zona · los pins son inquietudes de ejemplo'),
+      ipFallback, {timeout: 6000});
+  } else { ipFallback(); }
+  // click en el mapa: coloca la inquietud pendiente
+  MAP.on('click', e => {
+    if (!window.__pendiente) return;
+    const p = window.__pendiente; window.__pendiente = null;
+    document.getElementById('leafmap').classList.remove('picking');
+    L.circleMarker([e.latlng.lat, e.latlng.lng],
+      {radius: 9, color: '#A9D99F', weight: 2.5, fillColor: '#A9D99F', fillOpacity: .55})
+      .addTo(MAP).bindPopup(popupHtml(p.cat, 'Tu inquietud', p.txt, 'Pendiente de moderación', true)).openPopup();
+    const ok = document.getElementById('repOk');
+    ok.hidden = false; ok.className = 'repOk';
+    ok.innerHTML = '✅ ¡Ubicada! Tu inquietud queda <b>en moderación</b> antes de publicarse. La ves como pin verde claro.';
+    document.getElementById('repTxt').value = '';
+    document.getElementById('repCat').selectedIndex = 0;
+  });
 }
 initMap();
 
-/* ---------- subir inquietud (demo) ---------- */
+/* ---------- subir inquietud: elegís el punto en el mapa ---------- */
 function enviarReporte(){
   const cat = document.getElementById('repCat').value.trim();
   const txt = document.getElementById('repTxt').value.trim();
@@ -821,14 +890,13 @@ function enviarReporte(){
     alert('Elegí un tipo de inquietud y contanos un poco más (mínimo 10 caracteres).');
     return;
   }
-  document.getElementById('repOk').hidden = false;
-  document.getElementById('repTxt').value = '';
-  if (MAP){
-    const pos = [CENTER[0] + (Math.random()-.5)*.012, CENTER[1] + (Math.random()-.5)*.016];
-    L.circleMarker(pos, {radius:9, color:'#A9D99F', weight:2.5, fillColor:'#A9D99F', fillOpacity:.55})
-      .addTo(MAP).bindPopup(popupHtml(cat, 'Tu inquietud', txt, 'Pendiente de moderación', true)).openPopup();
-    MAP.panTo(pos);
-  }
+  if (!MAP) return;
+  window.__pendiente = {cat, txt};
+  document.getElementById('leafmap').classList.add('picking');
+  const ok = document.getElementById('repOk');
+  ok.hidden = false; ok.className = 'repHint';
+  ok.innerHTML = '👉 Ahora tocá el punto del mapa donde está el problema para ubicar tu inquietud.';
+  document.getElementById('leafmap').scrollIntoView({behavior: 'smooth', block: 'center'});
 }
 
 /* ---------- cursor glow ---------- */
@@ -995,7 +1063,7 @@ if (window.gsap && window.ScrollTrigger){
   });
   gsap.set(trunks, {scaleY: 0});
   gsap.set(crowns, {scale: 0});
-  const sc = gsap.timeline({scrollTrigger: {trigger: '#morph', start: 'top top', end: 'bottom bottom', scrub: .6}});
+  const sc = gsap.timeline({scrollTrigger: {trigger: '#morph', start: 'top top', end: 'bottom bottom', scrub: 1}});
   sc.to(gsap.utils.shuffle(wins.slice()), {opacity: 0, duration: .26, stagger: {each: .0045}}, .04)
     .to('#cityGlow', {opacity: 0, duration: .3}, .08)
     .to('#smokeG', {opacity: 0, duration: .28}, .12)
@@ -1004,11 +1072,11 @@ if (window.gsap && window.ScrollTrigger){
     .to(soils, {opacity: 1, duration: .08, stagger: .015}, .42)
     .to(rootPaths, {strokeDashoffset: 0, duration: .1, stagger: .012, ease: 'power1.out'}, .44)
     .to(trunks, {scaleY: 1, duration: .26, stagger: .04, ease: 'power2.out'}, .54)
-    .to(crowns, {scale: 1, duration: .24, stagger: {each: .006, from: 'random'}, ease: 'back.out(1.6)'}, .64);
+    .to(crowns, {scale: 1, duration: .24, stagger: {each: .006, from: 'random'}, ease: 'back.out(1.15)'}, .64);
 
   /* --- sol del CTA que amanece --- */
   gsap.fromTo('#cta .sun', {yPercent: 70}, {yPercent: -60, ease: 'none',
-    scrollTrigger: {trigger: '#cta', start: 'top bottom', end: 'center center', scrub: .8}});
+    scrollTrigger: {trigger: '#cta', start: 'top bottom', end: 'center center', scrub: 1.2}});
 
   /* --- río de hojas: canvas con viento por scroll --- */
   const cv = document.getElementById('leafCanvas'), ctx = cv.getContext('2d');
@@ -1018,7 +1086,7 @@ if (window.gsap && window.ScrollTrigger){
   const COLORS = ['169,217,159', '124,198,75', '242,169,59', '53,135,82'];
   const N = Math.min(46, Math.round(innerWidth / 30));
   const leaves = [];
-  const bandW = () => Math.max(110, innerWidth * .12); // franjas laterales: no tapan el contenido
+  const bandW = () => innerWidth < 700 ? innerWidth * .085 : Math.max(110, innerWidth * .12); // franjas laterales
   for (let i = 0; i < N; i++){
     const side = i % 2; // 0 = izquierda, 1 = derecha
     leaves.push({
