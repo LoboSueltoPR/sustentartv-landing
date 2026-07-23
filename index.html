@@ -334,25 +334,27 @@ transition:opacity .4s;mix-blend-mode:screen}
   <div class="stick" id="morphStick">
     <div class="dust"></div>
     <svg id="cityScape" viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice">
-      <g id="buildings" opacity=".5">
-        <rect x="80" y="140" width="90" height="180" fill="#26251F"/>
-        <rect x="200" y="90" width="70" height="230" fill="#2B2A24"/>
-        <rect x="300" y="170" width="110" height="150" fill="#26251F"/>
-        <rect x="1020" y="120" width="80" height="200" fill="#2B2A24"/>
-        <rect x="1130" y="180" width="100" height="140" fill="#26251F"/>
-        <rect x="1270" y="100" width="70" height="220" fill="#2B2A24"/>
-        <circle class="smoke" cx="235" cy="65" r="16" fill="#55534A" opacity=".6"/>
-        <circle class="smoke" cx="255" cy="40" r="11" fill="#55534A" opacity=".45"/>
-        <circle class="smoke" cx="1305" cy="75" r="14" fill="#55534A" opacity=".55"/>
-        <circle class="smoke" cx="1322" cy="52" r="9" fill="#55534A" opacity=".4"/>
-      </g>
-      <g id="forestG">
-        <g class="tree"><line x1="500" y1="320" x2="500" y2="240" stroke="#0D231A" stroke-width="7"/><circle cx="500" cy="222" r="38" fill="#2E5E40"/></g>
-        <g class="tree"><line x1="620" y1="320" x2="620" y2="210" stroke="#0D231A" stroke-width="8"/><circle cx="620" cy="186" r="48" fill="#1F4D2E"/></g>
-        <g class="tree"><line x1="760" y1="320" x2="760" y2="250" stroke="#0D231A" stroke-width="6"/><circle cx="760" cy="232" r="34" fill="#9DB89A"/></g>
-        <g class="tree"><line x1="880" y1="320" x2="880" y2="222" stroke="#0D231A" stroke-width="8"/><circle cx="880" cy="198" r="44" fill="#2E5E40"/></g>
-        <g class="tree"><line x1="1000" y1="320" x2="1000" y2="258" stroke="#0D231A" stroke-width="6"/><circle cx="1000" cy="240" r="30" fill="#1F4D2E"/></g>
-      </g>
+      <defs>
+        <radialGradient id="glowG" cx="0.5" cy="1" r="1">
+          <stop offset="0" stop-color="#C97B2E" stop-opacity=".5"/>
+          <stop offset=".6" stop-color="#C97B2E" stop-opacity=".15"/>
+          <stop offset="1" stop-color="#C97B2E" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="smogG2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#6B655A" stop-opacity="0"/>
+          <stop offset=".55" stop-color="#6B655A" stop-opacity=".5"/>
+          <stop offset="1" stop-color="#6B655A" stop-opacity=".62"/>
+        </linearGradient>
+        <linearGradient id="trunkG" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="#2B1D12"/>
+          <stop offset="1" stop-color="#4A3420"/>
+        </linearGradient>
+      </defs>
+      <ellipse id="cityGlow" cx="720" cy="330" rx="900" ry="240" fill="url(#glowG)"/>
+      <rect id="smogHaze" x="0" y="60" width="1440" height="260" fill="url(#smogG2)"/>
+      <g id="buildings"></g>
+      <g id="smokeG"></g>
+      <g id="forestG"></g>
     </svg>
     <div class="msg" data-step="0">
       <h2>El planeta no necesita<br><span class="it">espectadores.</span></h2>
@@ -882,12 +884,87 @@ if (window.gsap && window.ScrollTrigger){
     }});
   }
 
-  /* --- escena morph: la ciudad se hunde, el bosque crece --- */
-  gsap.set('#forestG .tree', {scaleY: 0});
+  /* --- escena morph: ciudad contaminada que se apaga, bosque ilustrado que crece --- */
+  const NSX = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs, parent){
+    const e = document.createElementNS(NSX, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    parent.appendChild(e); return e;
+  }
+  // — ciudad: edificios con ventanas encendidas + humo —
+  const gB = document.getElementById('buildings');
+  const CITY = [
+    {x:40,w:95,h:190},{x:165,w:70,h:245},{x:255,w:118,h:155},{x:400,w:82,h:215},{x:508,w:64,h:170},
+    {x:880,w:70,h:165},{x:975,w:88,h:210},{x:1090,w:115,h:150},{x:1232,w:78,h:235},{x:1335,w:92,h:180}
+  ];
+  const wins = [];
+  CITY.forEach(b => {
+    svgEl('rect', {x:b.x, y:320-b.h, width:b.w, height:b.h, fill:'#211F1A'}, gB);
+    svgEl('rect', {x:b.x, y:320-b.h, width:b.w, height:4, fill:'#2E2B24'}, gB);
+    for (let wy = 320-b.h+14; wy < 306; wy += 20){
+      for (let wx = b.x+8; wx < b.x+b.w-12; wx += 17){
+        if (Math.random() < .28) continue;
+        const lit = Math.random() < .62;
+        const w = svgEl('rect', {x:wx, y:wy, width:7, height:10, rx:1,
+          fill: lit ? (Math.random()<.5 ? '#F2A93B' : '#E8C97A') : '#3A362C',
+          opacity: lit ? (.55 + Math.random()*.45) : .8}, gB);
+        if (lit){
+          wins.push(w);
+          if (Math.random() < .16) // parpadeo de algunas luces
+            gsap.to(w, {opacity:.15, duration:.12+Math.random()*.4, repeat:-1, yoyo:true,
+              repeatDelay:1+Math.random()*4, delay:Math.random()*3});
+        }
+      }
+    }
+  });
+  const gSmoke = document.getElementById('smokeG');
+  [{x:200,y:75},{x:441,y:105},{x:1271,y:85},{x:1019,y:110}].forEach(p => {
+    for (let i = 0; i < 3; i++){
+      const c = svgEl('circle', {cx:p.x, cy:p.y, r:9+i*5, fill:'#55534A', opacity:.5}, gSmoke);
+      gsap.to(c, {y:-70-i*25, x:'+=14', opacity:0, duration:5+i*1.6, repeat:-1,
+        ease:'sine.out', delay:i*1.7});
+    }
+  });
+  // — bosque ilustrado: tronco con ramas + copa de blobs en capas —
+  const gF = document.getElementById('forestG');
+  const PAL = [['#173A26','#1F4D2E','#2E5E40','#9DB89A'],['#14331F','#1F4D2E','#3E6E4C','#C9D6C4'],['#1B4229','#2E5E40','#5A8A63','#9DB89A']];
+  const trunks = [], crowns = [];
+  [{x:460,s:.9},{x:585,s:1.25},{x:718,s:.75},{x:838,s:1.1},{x:962,s:.85},{x:1080,s:.6}].forEach((t,ti) => {
+    const g = svgEl('g', {transform:`translate(${t.x},0)`}, gF);
+    const tr = svgEl('g', {}, g);
+    tr.style.transformBox = 'fill-box'; tr.style.transformOrigin = 'bottom center';
+    svgEl('path', {d:`M-${7*t.s} 320 C-${5*t.s} ${280} -${3*t.s} ${250} 0 ${320-115*t.s}
+      C ${3*t.s} ${250} ${5*t.s} ${280} ${7*t.s} 320 Z`, fill:'url(#trunkG)'}, tr);
+    svgEl('path', {d:`M0 ${320-70*t.s} C ${16*t.s} ${320-84*t.s} ${24*t.s} ${320-96*t.s} ${30*t.s} ${320-108*t.s}`,
+      stroke:'#3A2817', 'stroke-width':3.4*t.s, fill:'none', 'stroke-linecap':'round'}, tr);
+    svgEl('path', {d:`M0 ${320-88*t.s} C -${14*t.s} ${320-100*t.s} -${22*t.s} ${320-110*t.s} -${27*t.s} ${320-122*t.s}`,
+      stroke:'#3A2817', 'stroke-width':3*t.s, fill:'none', 'stroke-linecap':'round'}, tr);
+    trunks.push(tr);
+    const cr = svgEl('g', {}, g);
+    cr.style.transformBox = 'fill-box'; cr.style.transformOrigin = 'center 85%';
+    const cy = 320-128*t.s, pal = PAL[ti % PAL.length];
+    const blobs = [
+      [0,8,44,36,1],[ -30,22,32,26,0],[30,20,34,27,0],[-16,-16,30,24,2],[18,-18,28,23,2],[0,-30,24,20,3]
+    ];
+    blobs.forEach(b => {
+      const e = svgEl('ellipse', {cx:b[0]*t.s, cy:cy+b[1]*t.s, rx:b[2]*t.s, ry:b[3]*t.s,
+        fill: pal[Math.min(b[4], 3)], opacity: b[4] === 3 ? .5 : .96}, cr);
+      e.style.transformBox = 'fill-box'; e.style.transformOrigin = 'center center';
+      crowns.push(e);
+    });
+    gsap.to(cr, {rotation: 1.6 + Math.random()*1.2, yoyo:true, repeat:-1,
+      duration: 2.8 + Math.random()*1.8, ease:'sine.inOut', delay: Math.random()*2});
+  });
+  gsap.set(trunks, {scaleY: 0});
+  gsap.set(crowns, {scale: 0});
   const sc = gsap.timeline({scrollTrigger: {trigger: '#morph', start: 'top top', end: 'bottom bottom', scrub: .6}});
-  sc.to('#buildings', {y: 150, opacity: 0, duration: .48, ease: 'power1.in'}, 0)
-    .to('#cityScape .smoke', {y: -60, opacity: 0, duration: .3}, 0)
-    .to('#forestG .tree', {scaleY: 1, duration: .38, stagger: .07, ease: 'back.out(1.3)'}, .42);
+  sc.to(gsap.utils.shuffle(wins.slice()), {opacity: 0, duration: .26, stagger: {each: .0045}}, .04)
+    .to('#cityGlow', {opacity: 0, duration: .3}, .08)
+    .to('#smokeG', {opacity: 0, duration: .28}, .12)
+    .to('#smogHaze', {opacity: 0, duration: .34}, .16)
+    .to('#buildings', {y: 175, opacity: 0, duration: .42, ease: 'power1.in'}, .16)
+    .to(trunks, {scaleY: 1, duration: .3, stagger: .045, ease: 'power2.out'}, .46)
+    .to(crowns, {scale: 1, duration: .26, stagger: {each: .012, from: 'random'}, ease: 'back.out(1.6)'}, .58);
 
   /* --- sol del CTA que amanece --- */
   gsap.fromTo('#cta .sun', {yPercent: 70}, {yPercent: -60, ease: 'none',
@@ -899,11 +976,15 @@ if (window.gsap && window.ScrollTrigger){
   function sizeCanvas(){ LW = cv.width = innerWidth; LH = cv.height = innerHeight; }
   sizeCanvas(); addEventListener('resize', sizeCanvas);
   const COLORS = ['157,184,154', '46,94,64', '242,169,59', '201,179,147'];
-  const N = Math.min(52, Math.round(innerWidth / 28));
+  const N = Math.min(46, Math.round(innerWidth / 30));
   const leaves = [];
+  const bandW = () => Math.max(110, innerWidth * .12); // franjas laterales: no tapan el contenido
   for (let i = 0; i < N; i++){
+    const side = i % 2; // 0 = izquierda, 1 = derecha
     leaves.push({
-      x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+      side,
+      x: side ? innerWidth - Math.random() * bandW() : Math.random() * bandW(),
+      y: Math.random() * innerHeight,
       s: 5 + Math.random() * 9,                 // tamaño
       a: Math.random() * Math.PI * 2,           // ángulo
       spin: (Math.random() - .5) * .02,
@@ -932,10 +1013,16 @@ if (window.gsap && window.ScrollTrigger){
       l.x += l.vx + Math.sin(l.sway) * .35;
       l.y += l.vy - wind;                    // el scroll "sopla" las hojas
       l.a += l.spin + wind * .002;
-      if (l.y > LH + 30) { l.y = -30; l.x = Math.random() * LW; }
-      if (l.y < -40) { l.y = LH + 20; l.x = Math.random() * LW; }
-      if (l.x < -30) l.x = LW + 20;
-      if (l.x > LW + 30) l.x = -20;
+      const bw = bandW();
+      if (l.y > LH + 30) { l.y = -30; l.x = l.side ? LW - Math.random() * bw : Math.random() * bw; }
+      if (l.y < -40) { l.y = LH + 20; l.x = l.side ? LW - Math.random() * bw : Math.random() * bw; }
+      if (l.side === 0){ // franja izquierda
+        if (l.x > bw) l.x = -10;
+        if (l.x < -30) l.x = bw - 10;
+      } else {           // franja derecha
+        if (l.x < LW - bw) l.x = LW + 10;
+        if (l.x > LW + 30) l.x = LW - bw + 10;
+      }
       drawLeaf(l);
     }
   });
