@@ -928,9 +928,9 @@ if (window.gsap && window.ScrollTrigger){
   // — bosque ilustrado: raíces → tronco → copa con detalle —
   const gF = document.getElementById('forestG');
   const PAL = [
-    ['#1F5E3A','#2A6E45','#358752','#7CC64B','#D8EDCB'],
-    ['#1B5636','#2F7C4E','#4A9B62','#8FD65B','#EAF7D9'],
-    ['#245F3D','#358752','#5CA96E','#7CC64B','#D8EDCB']
+    ['#123723','#1C5134','#2E7448','#7CC64B','#EAF7D9'],
+    ['#0F3320','#20583A','#3E8A55','#8FD65B','#F1FAE3'],
+    ['#153E28','#255F3D','#4E9C63','#7CC64B','#EAF7D9']
   ];
   const trunks = [], crowns = [], rootPaths = [], soils = [];
   [{x:430,s:.85},{x:545,s:1.2},{x:665,s:.7},{x:775,s:1.05},{x:890,s:.8},{x:1000,s:1.15},{x:1110,s:.65}].forEach((t,ti) => {
@@ -967,7 +967,7 @@ if (window.gsap && window.ScrollTrigger){
       [0,10,46,37,0],[-32,22,33,26,0],[32,20,35,27,0],          // base (tono oscuro)
       [-18,-14,31,25,1],[20,-16,29,24,1],[0,-4,34,27,1],        // medio
       [-8,-30,25,21,2],[14,-28,22,18,2],                        // superior claro
-      [0,-42,17,14,3],[-24,-24,14,12,3],                        // brotes lima
+      [0,-44,21,17,3],[-26,-26,17,14,3],[27,-28,15,12,3],        // brotes lima
       [-12,2,20,15,4],[16,6,16,12,4]                            // luces altas
     ];
     blobs.forEach(b => {
@@ -977,9 +977,9 @@ if (window.gsap && window.ScrollTrigger){
       crowns.push(e);
     });
     // frutos ámbar en algunos árboles + hojitas sueltas
-    if (ti % 3 === 1){
+    if (ti % 2 === 1){
       [[-20,8],[12,-8],[26,14],[-4,-22]].forEach(p => {
-        const fr = svgEl('circle', {cx:p[0]*t.s, cy:cy+p[1]*t.s, r:2.6*t.s, fill:'#F2A93B'}, cr);
+        const fr = svgEl('circle', {cx:p[0]*t.s, cy:cy+p[1]*t.s, r:3.6*t.s, fill:'#F2A93B'}, cr);
         fr.style.transformBox = 'fill-box'; fr.style.transformOrigin = 'center center';
         crowns.push(fr);
       });
